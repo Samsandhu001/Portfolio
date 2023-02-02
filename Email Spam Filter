@@ -1,0 +1,60 @@
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Scanner;
+
+public class SpamFilter {
+    private HashMap<String, Integer> spamWords = new HashMap<>();
+    private HashMap<String, Integer> hamWords = new HashMap<>();
+    private ArrayList<String> uniqueWords = new ArrayList<>();
+
+    public SpamFilter() {
+        // Train the filter with sample data
+        trainFilter("spam-data.txt", true);
+        trainFilter("ham-data.txt", false);
+    }
+
+    private void trainFilter(String fileName, boolean isSpam) {
+        try (Scanner scanner = new Scanner(new File(fileName))) {
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine().toLowerCase();
+                String[] words = line.split("\\s+");
+                for (String word : words) {
+                    if (!uniqueWords.contains(word)) {
+                        uniqueWords.add(word);
+                    }
+                    if (isSpam) {
+                        int count = spamWords.getOrDefault(word, 0) + 1;
+                        spamWords.put(word, count);
+                    } else {
+                        int count = hamWords.getOrDefault(word, 0) + 1;
+                        hamWords.put(word, count);
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean isSpam(String email) {
+        double spamProbability = 0.5;
+        double hamProbability = 0.5;
+        String[] words = email.toLowerCase().split("\\s+");
+        for (String word : words) {
+            if (uniqueWords.contains(word)) {
+                int spamCount = spamWords.getOrDefault(word, 0);
+                int hamCount = hamWords.getOrDefault(word, 0);
+                double pSpam = (spamCount + 1) / (double) (spamWords.size() + uniqueWords.size());
+                double pHam = (hamCount + 1) / (double) (hamWords.size() + uniqueWords.size());
+                spamProbability *= pSpam;
+                hamProbability *= pHam;
+            }
+        }
+        return spamProbability > hamProbability;
+    }
+
+}
+
+
